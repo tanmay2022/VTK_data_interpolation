@@ -1,0 +1,301 @@
+# Importing required libraries
+
+import sys
+import vtk
+import numpy as np
+import math
+from vtkmodules.util.numpy_support import vtk_to_numpy
+from vtkmodules.numpy_interface import dataset_adapter as dsa
+
+input_vtk = sys.argv[1]
+output_vtk = sys.argv[2]
+numpt = int(sys.argv[3])
+
+# Read the binary VTK file using vtk.vtkUnstructuredGridReader
+reader = vtk.vtkUnstructuredGridReader()
+reader.SetFileName(input_vtk)
+reader.Update()
+
+# Get the data from the reader using GetOutput()
+output = reader.GetOutput()
+
+# Convert the VTK data to a numpy array using vtk_to_numpy()
+data = vtk_to_numpy(output.GetPoints().GetData())
+
+
+reader = vtk.vtkUnstructuredGridReader()
+reader.SetFileName(input_vtk)
+reader.ReadAllScalarsOn()
+reader.ReadAllVectorsOn()
+reader.Update()
+usg = dsa.WrapDataObject(reader.GetOutput() )
+# Getting the data arrays
+array_phi = usg.PointData['phi'] # Assuming you know the name of the array
+# array_phi is a child class type of numpy.ndarray type
+array_mu1 = usg.PointData['mu_1']
+array_mu2 = usg.PointData['mu_2']
+array_theta = usg.PointData['theta']
+#array_psi = usg.PointData['psi']
+
+# Dividing grid into quarters. 1-> upper left 2-> upper right 3-> bottom left 4-> bottom right
+res = int(input("Please enter required resolution (integer power of 2 for bisecting multiple times): "))
+location = []
+
+print(" 1-> upper left 2-> upper right 3-> bottom left 4-> bottom right ")
+
+for i in range(int(math.log(res, 2))):
+    choice = int(input("Please choose the required quadrant within previous chosen quadrant: "))
+    location.append(choice)
+
+# initialising start and end point
+
+start_point = 0
+end_point = 0
+
+# Defining function to return data having increased resolution by a magnitude of 2
+
+#def increase_resolution(points_array, phi_array, mu1_array, mu2_array, psi_array, theta_array,quad):
+def increase_resolution(points_array, phi_array, mu1_array, mu2_array, theta_array,quad):
+    # takes initial data and required quadrant as input and returns final data with increased resolution.
+    points_total = len(points_array)
+    total_x = len(set(points_array[:, 0]))
+    total_y = len(set(points_array[:, 1]))
+    side_x = int(math.ceil(total_x/2))
+    side_y = int(math.ceil(total_y/2))
+
+    if quad == 1:
+        # upper left quadrant
+        start_point = int(0.5*total_x*(total_x-1))
+        end_point = int((total_x+0.5)*(total_x-1))
+
+    elif quad == 2:
+        # upper right quadrant
+        start_point = int(0.5*(total_x*total_x - 1))
+        end_point = total_x*total_x - 1
+
+    elif quad == 3:
+        # lower left quadrant
+        start_point = 0
+        end_point = int(0.5*(total_x*total_x - 1))
+
+    elif quad == 4:
+        # lower right quadrant
+        start_point = int(0.5*(total_x - 1))
+        end_point = int(0.5*total_x*(total_x-1)) - 1
+
+    final_array = np.zeros((int(math.pow((side_x * 2 - 1), 2)), 3))
+
+    tempx = np.linspace(points_array[start_point][0], points_array[start_point + side_x - 1][0], (2*side_x - 1))
+    tempy = np.linspace(points_array[start_point][1], points_array[end_point][1], (2*side_x - 1))
+    flag = 0
+    for i in range(2*side_x - 1):
+        for j in range(2*side_x - 1):
+            final_array[flag][0] = tempx[j]
+            final_array[flag][1] = tempy[i]
+            flag += 1
+
+    # Creating the final data array files
+    phi_original = np.zeros(side_x * side_y)
+    mu1_original = np.zeros(side_x * side_y)
+    mu2_original = np.zeros(side_x * side_y)
+    #psi_original = np.zeros(side_x * side_y)
+    theta_original = np.zeros(side_x * side_y)
+
+    flag1 = 0
+    for i in range(side_x):
+        for j in range(side_y):
+            phi_original[flag1] = phi_array[flag1 + start_point + (i * (side_x - 1))]
+            mu1_original[flag1] = mu1_array[flag1 + start_point + (i * (side_x - 1))]
+            mu2_original[flag1] = mu2_array[flag1 + start_point + (i * (side_x - 1))]
+            #psi_original[flag1] = psi_array[flag1 + start_point + (i * (side_x - 1))]
+            theta_original[flag1] = theta_array[flag1 + start_point + (i * (side_x - 1))]
+            flag1 += 1
+
+    phix_array = np.zeros((2 * side_x - 1) * side_y)
+    mu1x_array = np.zeros((2 * side_x - 1) * side_y)
+    mu2x_array = np.zeros((2 * side_x - 1) * side_y)
+    #psix_array = np.zeros((2 * side_x - 1) * side_y)
+    thetax_array = np.zeros((2 * side_x - 1) * side_y)
+
+    flag_or = 0
+    flag2 = 0
+    for i in range(side_y):
+        for j in range(2 * side_x - 1):
+            if j % 2 == 0:
+                phix_array[flag2] = phi_original[flag_or]
+                mu1x_array[flag2] = mu1_original[flag_or]
+                mu2x_array[flag2] = mu2_original[flag_or]
+                #psix_array[flag2] = psi_original[flag_or]
+                thetax_array[flag2] = theta_original[flag_or]
+                flag_or += 1
+            else:
+                phix_array[flag2] = 0.5 * (phi_original[flag_or - 1] + phi_original[flag_or])
+                mu1x_array[flag2] = 0.5 * (mu1_original[flag_or - 1] + mu1_original[flag_or])
+                mu2x_array[flag2] = 0.5 * (mu2_original[flag_or - 1] + mu2_original[flag_or])
+                #psix_array[flag2] = 0.5 * (psi_original[flag_or - 1] + psi_original[flag_or])
+                thetax_array[flag2] = 0.5 * (theta_original[flag_or - 1] + theta_original[flag_or])
+            flag2 += 1
+
+
+    final_phi_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
+    final_mu1_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
+    final_mu2_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
+    #final_psi_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
+    final_theta_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
+
+    flag_new = 0
+    flag_old = 0
+    for i in range(2 * side_x - 1):
+        for j in range(2 * side_y - 1):
+            if i % 2 == 0:
+                final_phi_array[flag_new] = phix_array[flag_old]
+                final_mu1_array[flag_new] = mu1x_array[flag_old]
+                final_mu2_array[flag_new] = mu2x_array[flag_old]
+                #final_psi_array[flag_new] = psix_array[flag_old]
+                final_theta_array[flag_new] = thetax_array[flag_old]
+                flag_old += 1
+            else:
+                final_phi_array[flag_new] = 0.5 * (
+                            phix_array[flag_old + j] + phix_array[flag_old - (2 * side_x - 1) + j])
+                final_mu1_array[flag_new] = 0.5 * (
+                        mu1x_array[flag_old + j] + mu1x_array[flag_old - (2 * side_x - 1) + j])
+                final_mu2_array[flag_new] = 0.5 * (
+                        mu2x_array[flag_old + j] + mu2x_array[flag_old - (2 * side_x - 1) + j])
+                #final_psi_array[flag_new] = 0.5 * (
+                        #psix_array[flag_old + j] + psix_array[flag_old - (2 * side_x - 1) + j])
+                final_theta_array[flag_new] = 0.5 * (
+                        thetax_array[flag_old + j] + thetax_array[flag_old - (2 * side_x - 1) + j])
+            flag_new += 1
+
+    #return final_array, final_phi_array, final_mu1_array, final_mu2_array, final_psi_array, final_theta_array
+    return final_array, final_phi_array, final_mu1_array, final_mu2_array, final_theta_array
+
+
+# Calling function as many times as required based on user input resolution with input data being output data of previous iteration
+
+
+for i in range(int(math.log(res, 2))):
+    if i == 0:
+        final_array, final_phi_array, final_mu1_array, final_mu2_array, final_theta_array = increase_resolution(data[0:numpt], array_phi, array_mu1, array_mu2,  array_theta, location[i])
+    else:
+        final_array, final_phi_array, final_mu1_array, final_mu2_array, final_theta_array = increase_resolution(final_array, final_phi_array, final_mu1_array, final_mu2_array, final_theta_array, location[i])
+
+
+# Creating new vtk file with required data
+shiftx = np.min(final_array[:,0])
+shifty = np.min(final_array[:,1])
+#print(shiftx)
+#print(shifty)
+
+# Create the points
+points = vtk.vtkPoints()
+n_points = len(final_array)
+n_points_per_side = int(np.sqrt(n_points))
+spacing = 1.0 / (n_points_per_side - 1)
+for i in range(n_points):
+    final_array[i][0] = final_array[i][0] - shiftx
+    final_array[i][1] = final_array[i][1] - shifty
+    x = final_array[i][0]
+    y = final_array[i][1]
+    z = final_array[i][2]
+    points.InsertNextPoint(x, y, z)
+
+# Create the unstructured grid
+grid = vtk.vtkUnstructuredGrid()
+grid.SetPoints(points)
+
+# Create the cells
+n_cells = (n_points_per_side - 1) * (n_points_per_side - 1)
+cell_type = vtk.VTK_QUAD
+grid.Allocate(n_cells, n_cells)
+for i in range(n_points_per_side - 1):
+    for j in range(n_points_per_side - 1):
+        cell = vtk.vtkQuad()
+        p1 = j + i * n_points_per_side
+        p2 = p1 + 1
+        p3 = p2 + n_points_per_side
+        p4 = p1 + n_points_per_side
+        cell.GetPointIds().SetId(0, p1)
+        cell.GetPointIds().SetId(1, p2)
+        cell.GetPointIds().SetId(2, p3)
+        cell.GetPointIds().SetId(3, p4)
+        grid.InsertNextCell(cell_type, cell.GetPointIds())
+
+# Create the data arrays
+
+data_array = vtk.vtkFloatArray()
+data_array.SetName("phi")
+data_array.SetNumberOfComponents(1)
+data_array.SetNumberOfTuples(n_points)
+for i in range(n_points):
+    phi = final_phi_array[i]
+    data_array.SetValue(i, phi)
+
+# Add the data array to the grid
+grid.GetPointData().AddArray(data_array)
+
+data_array = vtk.vtkFloatArray()
+data_array.SetName("mu_1")
+data_array.SetNumberOfComponents(1)
+data_array.SetNumberOfTuples(n_points)
+for i in range(n_points):
+    mu1 = final_mu1_array[i]
+    data_array.SetValue(i, mu1)
+
+# Add the data array to the grid
+grid.GetPointData().AddArray(data_array)
+
+data_array = vtk.vtkFloatArray()
+data_array.SetName("mu_2")
+data_array.SetNumberOfComponents(1)
+data_array.SetNumberOfTuples(n_points)
+for i in range(n_points):
+    mu2 = final_mu2_array[i]
+    data_array.SetValue(i, mu2)
+
+# Add the data array to the grid
+grid.GetPointData().AddArray(data_array)
+
+#data_array = vtk.vtkFloatArray()
+#data_array.SetName("psi")
+#data_array.SetNumberOfComponents(1)
+#data_array.SetNumberOfTuples(n_points)
+#for i in range(n_points):
+#    psi = final_psi_array[i]
+#    data_array.SetValue(i, psi)
+
+# Add the data array to the grid
+#grid.GetPointData().AddArray(data_array)
+
+#data_array = vtk.vtkFloatArray()
+#data_array.SetName("theta")
+#data_array.SetNumberOfComponents(1)
+#data_array.SetNumberOfTuples(n_points)
+#for i in range(n_points):
+#    theta = final_theta_array[i]
+#    data_array.SetValue(i, theta)
+
+# Add the data array to the grid
+#grid.GetPointData().AddArray(data_array)
+
+# Write the grid to a binary VTK file
+writer = vtk.vtkUnstructuredGridWriter()
+writer.SetFileName(output_vtk)
+writer.SetInputData(grid)
+writer.SetFileTypeToBinary()
+writer.Write()
+
+
+
+with open('setComposition', 'w') as f1:
+    for i in range(n_points_per_side - 1):
+        for j in range(n_points_per_side - 1):
+            p1 = j + i * n_points_per_side
+            p2 = p1 + 1
+            p3 = p2 + n_points_per_side
+            p4 = p1 + n_points_per_side
+            f1.write(" boxToCell{ box ("+str(final_array[p1][0])+" "+str(final_array[p1][1])+" 0) ("+str(final_array[p3][0])+" "+str(final_array[p3][1])+" 8e-11); fieldValues (\n")
+            mu1 = 0.25*(final_mu1_array[p1] + final_mu1_array[p2] + final_mu1_array[p3] + final_mu1_array[p4])
+            mu2 = 0.25*(final_mu2_array[p1] + final_mu2_array[p2] + final_mu2_array[p3] + final_mu2_array[p4])
+            f1.write("	volScalarFieldValue mu_1 "+str(mu1)+"\n")
+            f1.write("	volScalarFieldValue mu_2 "+str(mu2)+"); }\n")
