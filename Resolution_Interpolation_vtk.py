@@ -7,9 +7,15 @@ import math
 from vtkmodules.util.numpy_support import vtk_to_numpy
 from vtkmodules.numpy_interface import dataset_adapter as dsa
 
+# Input VTK 
 input_vtk = sys.argv[1]
+
+# Output VTK
 output_vtk = sys.argv[2]
-numpt = int(sys.argv[3])
+
+# Number of cells along each direction
+numcell = int(sys.argv[3])
+numpt = (numcell+1)**2
 
 # Read the binary VTK file using vtk.vtkUnstructuredGridReader
 reader = vtk.vtkUnstructuredGridReader()
@@ -30,11 +36,11 @@ reader.ReadAllVectorsOn()
 reader.Update()
 usg = dsa.WrapDataObject(reader.GetOutput() )
 # Getting the data arrays
-array_phi = usg.PointData['phi'] # Assuming you know the name of the array
+#array_phi = usg.PointData['phi'] # Assuming you know the name of the array
 # array_phi is a child class type of numpy.ndarray type
 array_mu1 = usg.PointData['mu_1']
 array_mu2 = usg.PointData['mu_2']
-array_theta = usg.PointData['theta']
+#array_theta = usg.PointData['theta']
 #array_psi = usg.PointData['psi']
 
 # Dividing grid into quarters. 1-> upper left 2-> upper right 3-> bottom left 4-> bottom right
@@ -55,7 +61,7 @@ end_point = 0
 # Defining function to return data having increased resolution by a magnitude of 2
 
 #def increase_resolution(points_array, phi_array, mu1_array, mu2_array, psi_array, theta_array,quad):
-def increase_resolution(points_array, phi_array, mu1_array, mu2_array, theta_array,quad):
+def increase_resolution(points_array, mu1_array, mu2_array, quad):
     # takes initial data and required quadrant as input and returns final data with increased resolution.
     points_total = len(points_array)
     total_x = len(set(points_array[:, 0]))
@@ -95,80 +101,80 @@ def increase_resolution(points_array, phi_array, mu1_array, mu2_array, theta_arr
             flag += 1
 
     # Creating the final data array files
-    phi_original = np.zeros(side_x * side_y)
+    #phi_original = np.zeros(side_x * side_y)
     mu1_original = np.zeros(side_x * side_y)
     mu2_original = np.zeros(side_x * side_y)
     #psi_original = np.zeros(side_x * side_y)
-    theta_original = np.zeros(side_x * side_y)
+    #theta_original = np.zeros(side_x * side_y)
 
     flag1 = 0
     for i in range(side_x):
         for j in range(side_y):
-            phi_original[flag1] = phi_array[flag1 + start_point + (i * (side_x - 1))]
+            #phi_original[flag1] = phi_array[flag1 + start_point + (i * (side_x - 1))]
             mu1_original[flag1] = mu1_array[flag1 + start_point + (i * (side_x - 1))]
             mu2_original[flag1] = mu2_array[flag1 + start_point + (i * (side_x - 1))]
             #psi_original[flag1] = psi_array[flag1 + start_point + (i * (side_x - 1))]
-            theta_original[flag1] = theta_array[flag1 + start_point + (i * (side_x - 1))]
+            #theta_original[flag1] = theta_array[flag1 + start_point + (i * (side_x - 1))]
             flag1 += 1
 
-    phix_array = np.zeros((2 * side_x - 1) * side_y)
+    #phix_array = np.zeros((2 * side_x - 1) * side_y)
     mu1x_array = np.zeros((2 * side_x - 1) * side_y)
     mu2x_array = np.zeros((2 * side_x - 1) * side_y)
     #psix_array = np.zeros((2 * side_x - 1) * side_y)
-    thetax_array = np.zeros((2 * side_x - 1) * side_y)
+    #thetax_array = np.zeros((2 * side_x - 1) * side_y)
 
     flag_or = 0
     flag2 = 0
     for i in range(side_y):
         for j in range(2 * side_x - 1):
             if j % 2 == 0:
-                phix_array[flag2] = phi_original[flag_or]
+                #phix_array[flag2] = phi_original[flag_or]
                 mu1x_array[flag2] = mu1_original[flag_or]
                 mu2x_array[flag2] = mu2_original[flag_or]
                 #psix_array[flag2] = psi_original[flag_or]
-                thetax_array[flag2] = theta_original[flag_or]
+                #thetax_array[flag2] = theta_original[flag_or]
                 flag_or += 1
             else:
-                phix_array[flag2] = 0.5 * (phi_original[flag_or - 1] + phi_original[flag_or])
+                #phix_array[flag2] = 0.5 * (phi_original[flag_or - 1] + phi_original[flag_or])
                 mu1x_array[flag2] = 0.5 * (mu1_original[flag_or - 1] + mu1_original[flag_or])
                 mu2x_array[flag2] = 0.5 * (mu2_original[flag_or - 1] + mu2_original[flag_or])
                 #psix_array[flag2] = 0.5 * (psi_original[flag_or - 1] + psi_original[flag_or])
-                thetax_array[flag2] = 0.5 * (theta_original[flag_or - 1] + theta_original[flag_or])
+                #thetax_array[flag2] = 0.5 * (theta_original[flag_or - 1] + theta_original[flag_or])
             flag2 += 1
 
 
-    final_phi_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
+    #final_phi_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
     final_mu1_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
     final_mu2_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
     #final_psi_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
-    final_theta_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
+    #final_theta_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
 
     flag_new = 0
     flag_old = 0
     for i in range(2 * side_x - 1):
         for j in range(2 * side_y - 1):
             if i % 2 == 0:
-                final_phi_array[flag_new] = phix_array[flag_old]
+                #final_phi_array[flag_new] = phix_array[flag_old]
                 final_mu1_array[flag_new] = mu1x_array[flag_old]
                 final_mu2_array[flag_new] = mu2x_array[flag_old]
                 #final_psi_array[flag_new] = psix_array[flag_old]
-                final_theta_array[flag_new] = thetax_array[flag_old]
+                #final_theta_array[flag_new] = thetax_array[flag_old]
                 flag_old += 1
             else:
-                final_phi_array[flag_new] = 0.5 * (
-                            phix_array[flag_old + j] + phix_array[flag_old - (2 * side_x - 1) + j])
+                #final_phi_array[flag_new] = 0.5 * (
+                            #phix_array[flag_old + j] + phix_array[flag_old - (2 * side_x - 1) + j])
                 final_mu1_array[flag_new] = 0.5 * (
                         mu1x_array[flag_old + j] + mu1x_array[flag_old - (2 * side_x - 1) + j])
                 final_mu2_array[flag_new] = 0.5 * (
                         mu2x_array[flag_old + j] + mu2x_array[flag_old - (2 * side_x - 1) + j])
                 #final_psi_array[flag_new] = 0.5 * (
                         #psix_array[flag_old + j] + psix_array[flag_old - (2 * side_x - 1) + j])
-                final_theta_array[flag_new] = 0.5 * (
-                        thetax_array[flag_old + j] + thetax_array[flag_old - (2 * side_x - 1) + j])
+                #final_theta_array[flag_new] = 0.5 * (
+                        #thetax_array[flag_old + j] + thetax_array[flag_old - (2 * side_x - 1) + j])
             flag_new += 1
 
     #return final_array, final_phi_array, final_mu1_array, final_mu2_array, final_psi_array, final_theta_array
-    return final_array, final_phi_array, final_mu1_array, final_mu2_array, final_theta_array
+    return final_array, final_mu1_array, final_mu2_array
 
 
 # Calling function as many times as required based on user input resolution with input data being output data of previous iteration
@@ -176,9 +182,9 @@ def increase_resolution(points_array, phi_array, mu1_array, mu2_array, theta_arr
 
 for i in range(int(math.log(res, 2))):
     if i == 0:
-        final_array, final_phi_array, final_mu1_array, final_mu2_array, final_theta_array = increase_resolution(data[0:numpt], array_phi, array_mu1, array_mu2,  array_theta, location[i])
+        final_array, final_mu1_array, final_mu2_array = increase_resolution(data[0:numpt], array_mu1, array_mu2, location[i])
     else:
-        final_array, final_phi_array, final_mu1_array, final_mu2_array, final_theta_array = increase_resolution(final_array, final_phi_array, final_mu1_array, final_mu2_array, final_theta_array, location[i])
+        final_array, final_mu1_array, final_mu2_array = increase_resolution(final_array, final_mu1_array, final_mu2_array, location[i])
 
 
 # Creating new vtk file with required data
@@ -223,16 +229,16 @@ for i in range(n_points_per_side - 1):
 
 # Create the data arrays
 
-data_array = vtk.vtkFloatArray()
-data_array.SetName("phi")
-data_array.SetNumberOfComponents(1)
-data_array.SetNumberOfTuples(n_points)
-for i in range(n_points):
-    phi = final_phi_array[i]
-    data_array.SetValue(i, phi)
+#data_array = vtk.vtkFloatArray()
+#data_array.SetName("phi")
+#data_array.SetNumberOfComponents(1)
+#data_array.SetNumberOfTuples(n_points)
+#for i in range(n_points):
+#    phi = final_phi_array[i]
+#    data_array.SetValue(i, phi)
 
 # Add the data array to the grid
-grid.GetPointData().AddArray(data_array)
+#grid.GetPointData().AddArray(data_array)
 
 data_array = vtk.vtkFloatArray()
 data_array.SetName("mu_1")
@@ -285,17 +291,35 @@ writer.SetInputData(grid)
 writer.SetFileTypeToBinary()
 writer.Write()
 
-
-
-with open('setComposition', 'w') as f1:
+with open('mu_1initial', 'w') as f0:
     for i in range(n_points_per_side - 1):
         for j in range(n_points_per_side - 1):
             p1 = j + i * n_points_per_side
             p2 = p1 + 1
             p3 = p2 + n_points_per_side
             p4 = p1 + n_points_per_side
-            f1.write(" boxToCell{ box ("+str(final_array[p1][0])+" "+str(final_array[p1][1])+" 0) ("+str(final_array[p3][0])+" "+str(final_array[p3][1])+" 8e-11); fieldValues (\n")
+            mu1 = 0.25*(final_mu1_array[p1] + final_mu1_array[p2] + final_mu1_array[p3] + final_mu1_array[p4])
+            f0.write(str(mu1)+"\n")
+            
+with open('mu_2initial', 'w') as f1:
+    for i in range(n_points_per_side - 1):
+        for j in range(n_points_per_side - 1):
+            p1 = j + i * n_points_per_side
+            p2 = p1 + 1
+            p3 = p2 + n_points_per_side
+            p4 = p1 + n_points_per_side
+            mu2 = 0.25*(final_mu2_array[p1] + final_mu2_array[p2] + final_mu2_array[p3] + final_mu2_array[p4])
+            f1.write(str(mu2)+"\n")
+
+with open('setComposition', 'w') as f2:
+    for i in range(n_points_per_side - 1):
+        for j in range(n_points_per_side - 1):
+            p1 = j + i * n_points_per_side
+            p2 = p1 + 1
+            p3 = p2 + n_points_per_side
+            p4 = p1 + n_points_per_side
+            f2.write(" boxToCell{ box ("+str(final_array[p1][0])+" "+str(final_array[p1][1])+" 0) ("+str(final_array[p3][0])+" "+str(final_array[p3][1])+" 8e-11); fieldValues (\n")
             mu1 = 0.25*(final_mu1_array[p1] + final_mu1_array[p2] + final_mu1_array[p3] + final_mu1_array[p4])
             mu2 = 0.25*(final_mu2_array[p1] + final_mu2_array[p2] + final_mu2_array[p3] + final_mu2_array[p4])
-            f1.write("	volScalarFieldValue mu_1 "+str(mu1)+"\n")
-            f1.write("	volScalarFieldValue mu_2 "+str(mu2)+"); }\n")
+            f2.write("	volScalarFieldValue mu_1 "+str(mu1)+"\n")
+            f2.write("	volScalarFieldValue mu_2 "+str(mu2)+"); }\n")
