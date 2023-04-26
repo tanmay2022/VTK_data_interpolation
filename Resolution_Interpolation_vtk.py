@@ -292,6 +292,7 @@ writer.SetFileTypeToBinary()
 writer.Write()
 
 with open('mu_1initial', 'w') as f0:
+    f0.write("internalField   nonuniform List<scalar>\n"+str(numcell**2)+"\n(")
     for i in range(n_points_per_side - 1):
         for j in range(n_points_per_side - 1):
             p1 = j + i * n_points_per_side
@@ -300,8 +301,10 @@ with open('mu_1initial', 'w') as f0:
             p4 = p1 + n_points_per_side
             mu1 = 0.25*(final_mu1_array[p1] + final_mu1_array[p2] + final_mu1_array[p3] + final_mu1_array[p4])
             f0.write(str(mu1)+"\n")
+    f0.write(")\n;")
             
 with open('mu_2initial', 'w') as f1:
+    f1.write("internalField   nonuniform List<scalar>\n"+str(numcell**2)+"\n(")
     for i in range(n_points_per_side - 1):
         for j in range(n_points_per_side - 1):
             p1 = j + i * n_points_per_side
@@ -310,6 +313,7 @@ with open('mu_2initial', 'w') as f1:
             p4 = p1 + n_points_per_side
             mu2 = 0.25*(final_mu2_array[p1] + final_mu2_array[p2] + final_mu2_array[p3] + final_mu2_array[p4])
             f1.write(str(mu2)+"\n")
+    f1.write(")\n;")
 
 with open('setComposition', 'w') as f2:
     for i in range(n_points_per_side - 1):
