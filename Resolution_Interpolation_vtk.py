@@ -289,7 +289,7 @@ writer = vtk.vtkUnstructuredGridWriter()
 writer.SetFileName(output_vtk)
 writer.SetInputData(grid)
 writer.SetFileTypeToBinary()
-writer.Write()
+#writer.Write()
 
 with open('mu_1initial', 'w') as f0:
     f0.write("internalField   nonuniform List<scalar>\n"+str(numcell**2)+"\n(")
@@ -315,15 +315,3 @@ with open('mu_2initial', 'w') as f1:
             f1.write(str(mu2)+"\n")
     f1.write(")\n;")
 
-with open('setComposition', 'w') as f2:
-    for i in range(n_points_per_side - 1):
-        for j in range(n_points_per_side - 1):
-            p1 = j + i * n_points_per_side
-            p2 = p1 + 1
-            p3 = p2 + n_points_per_side
-            p4 = p1 + n_points_per_side
-            f2.write(" boxToCell{ box ("+str(final_array[p1][0])+" "+str(final_array[p1][1])+" 0) ("+str(final_array[p3][0])+" "+str(final_array[p3][1])+" 8e-11); fieldValues (\n")
-            mu1 = 0.25*(final_mu1_array[p1] + final_mu1_array[p2] + final_mu1_array[p3] + final_mu1_array[p4])
-            mu2 = 0.25*(final_mu2_array[p1] + final_mu2_array[p2] + final_mu2_array[p3] + final_mu2_array[p4])
-            f2.write("	volScalarFieldValue mu_1 "+str(mu1)+"\n")
-            f2.write("	volScalarFieldValue mu_2 "+str(mu2)+"); }\n")
