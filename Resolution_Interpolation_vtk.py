@@ -351,8 +351,8 @@ for i in range(n_points):
     ca1_array[i] = dcdmu_a11*(final_mu1_array[i] - B_a1) + dcdmu_a12*(final_mu2_array[i] - B_a2)
     ca2_array[i] = dcdmu_a12*(final_mu1_array[i] - B_a1) + dcdmu_a22*(final_mu2_array[i] - B_a2)
     
-    ppt_mu1_array[i] = HLiq11in*ca1_array[i] + HLiq12in*ca2_array[i];
-    ppt_mu2_array[i] = HLiq12in*ca1_array[i] + HLiq22in*ca2_array[i];
+    ppt_mu1_array[i] = ha1_11_in*ca1_array[i] + ha1_12_in*ca2_array[i]
+    ppt_mu2_array[i] = ha1_12_in*ca1_array[i] + ha1_22_in*ca2_array[i]
 
 
 
