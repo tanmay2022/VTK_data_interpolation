@@ -2,10 +2,12 @@
 
 import sys
 import vtk
+import pandas as pd
 import numpy as np
 import math
 from vtkmodules.util.numpy_support import vtk_to_numpy
 from vtkmodules.numpy_interface import dataset_adapter as dsa
+from scipy.interpolate import interp1d
 
 # Input VTK 
 input_vtk = sys.argv[1]
@@ -290,6 +292,71 @@ writer.SetFileName(output_vtk)
 writer.SetInputData(grid)
 writer.SetFileTypeToBinary()
 #writer.Write()
+    
+
+tdb_c = pd.read_csv('Composition_FCC_A1.csv');
+cs_1 = np.array(tdb.loc[:,'Al@fcc']).squeeze()
+cs_2 = np.array(tdb.loc[:,'Cr@fcc']).squeeze()
+cl_1 = np.array(tdb.loc[:,'Al@liq']).squeeze()
+cl_2 = np.array(tdb.loc[:,'Cr@liq']).squeeze()
+
+cs_1_final = cs_1[0]
+cs_2_final = cs_2[0]
+cl_1_final = cl_1[0]
+cl_2_final = cl_2[0]
+#cST_func = interp1d(T_tdb, c_S_tdb, kind='cubic')
+#cLT_func = interp1d(T_tdb, c_L_tdb, kind='cubic')
+# use temp to find compo
+
+#compo_tdb_func = interp1d(c_L_tdb, c_S_tdb, kind='cubic')
+
+tdb_hliq = pd.read_csv('HSN_LIQUID.csv');
+hl_11 = np.array(tdb_hliq.loc[:,'HSN(Al,Al)@liq']).squeeze()
+hl_22 = np.array(tdb_hliq.loc[:,'HSN(Cr,Cr)@liq']).squeeze()
+hl_12 = np.array(tdb_hliq.loc[:,'HSN(Al,Cr)@liq']).squeeze()
+
+hl_11_final = hl_11[0]
+hl_22_final = hl_22[0]
+hl_12_final = hl_12[0]
+#hlT_func = interp1d(T_tdb, hl_tdb, kind='cubic')
+# use temp to find hessian
+
+tdb_hsol = pd.read_csv('HSN_FCC_A1.csv');
+hs_11 = np.array(tdb_hsol.loc[:,'HSN(Al,Al)@fcc']).squeeze()
+hs_22 = np.array(tdb_hsol.loc[:,'HSN(Cr,Cr)@fcc']).squeeze()
+hs_12 = np.array(tdb_hsol.loc[:,'HSN(Al,Cr)@fcc']).squeeze()
+
+hs_11_final = hs_11[0]
+hs_22_final = hs_22[0]
+hs_12_final = hs_12[0]
+#hsT_func = interp1d(T_tdb, hs_tdb, kind='cubic')
+# use temp to find hessian
+
+B_a1 = (hl_11_final*cl_1_final - hs_11_final*cs_1_final) + (hl_12_final*cl_2_final - hs_12_final*cs_2_final)
+B_a2 = (hl_22_final*cl_2_final - hs_22_final*cs_2_final) + (hl_12_final*cl_1_final - hs_12_final*cs_1_final)
+
+detdmudc_a = hs_11_final*hs_22_final - hs_12_final*hs_12_final
+
+dcdmu_a11 = hs_22_final/detdmudc_a
+dcdmu_a22 = hs_11_final/detdmudc_a
+dcdmu_a12 = -hs_12_final/detdmudc_a
+
+ca1_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
+ca2_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
+
+ppt_mu1_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
+ppt_mu2_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
+
+for i in range(n_points):
+    ca1_array[i] = dcdmu_a11*(final_mu1_array[i] - B_a1) + dcdmu_a12*(final_mu2_array[i] - B_a2)
+    ca2_array[i] = dcdmu_a12*(final_mu1_array[i] - B_a1) + dcdmu_a22*(final_mu2_array[i] - B_a2)
+    
+    ppt_mu1_array[i] = HLiq11in*ca1_array[i] + HLiq12in*ca2_array[i];
+    ppt_mu2_array[i] = HLiq12in*ca1_array[i] + HLiq22in*ca2_array[i];
+
+
+
+
 
 with open('mu_1initial', 'w') as f0:
     f0.write("internalField   nonuniform List<scalar>\n"+str(numcell**2)+"\n(")
@@ -314,4 +381,5 @@ with open('mu_2initial', 'w') as f1:
             mu2 = 0.25*(final_mu2_array[p1] + final_mu2_array[p2] + final_mu2_array[p3] + final_mu2_array[p4])
             f1.write(str(mu2)+"\n")
     f1.write(")\n;")
+    
 
