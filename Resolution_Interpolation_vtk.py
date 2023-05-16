@@ -19,6 +19,9 @@ output_vtk = sys.argv[2]
 numcell = int(sys.argv[3])
 numpt = (numcell+1)**2
 
+# Temperature for evaluating chemical potential
+temp_n = float(sys.argv[4])
+
 # Read the binary VTK file using vtk.vtkUnstructuredGridReader
 reader = vtk.vtkUnstructuredGridReader()
 reader.SetFileName(input_vtk)
@@ -348,14 +351,22 @@ ppt_mu1_array = np.zeros(n_points)
 ppt_mu2_array = np.zeros(n_points)
 
 tdb_hs1 = pd.read_csv('HSN_L12_FCC_A1_1.csv');
+T_tdb = np.array(tdb_hs1.loc[:,'Temp']).squeeze()
 hs1_11 = np.array(tdb_hs1.loc[:,'HSN(Al,Al)@fcc']).squeeze()
 hs1_22 = np.array(tdb_hs1.loc[:,'HSN(Cr,Cr)@fcc']).squeeze()
 hs1_12 = np.array(tdb_hs1.loc[:,'HSN(Al,Cr)@fcc']).squeeze()
 
-hs1_11_final = hs1_11[-1]
-hs1_22_final = hs1_22[-1]
-hs1_12_final = hs1_12[-1]
-#hlT_func = interp1d(T_tdb, hl_tdb, kind='cubic')
+hs1_11_func = interp1d(T_tdb, hs1_11, kind='cubic')
+hs1_22_func = interp1d(T_tdb, hs1_22, kind='cubic')
+hs1_12_func = interp1d(T_tdb, hs1_12, kind='cubic')
+
+hs1_11_final = hs1_11_func(temp_n).item();
+hs1_22_final = hs1_22_func(temp_n).item();
+hs1_12_final = hs1_12_func(temp_n).item();
+
+#hs1_11_final = hs1_11[-1]
+#hs1_22_final = hs1_22[-1]
+#hs1_12_final = hs1_12[-1]
 # use temp to find hessian
 
 for i in range(n_points):
