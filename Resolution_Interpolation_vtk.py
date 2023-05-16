@@ -332,29 +332,38 @@ hs_12_final = hs_12[0]
 #hsT_func = interp1d(T_tdb, hs_tdb, kind='cubic')
 # use temp to find hessian
 
-B_a1 = (hl_11_final*cl_1_final - hs_11_final*cs_1_final) + (hl_12_final*cl_2_final - hs_12_final*cs_2_final)
-B_a2 = (hl_22_final*cl_2_final - hs_22_final*cs_2_final) + (hl_12_final*cl_1_final - hs_12_final*cs_1_final)
+B_s1 = (hl_11_final*cl_1_final - hs_11_final*cs_1_final) + (hl_12_final*cl_2_final - hs_12_final*cs_2_final)
+B_s2 = (hl_22_final*cl_2_final - hs_22_final*cs_2_final) + (hl_12_final*cl_1_final - hs_12_final*cs_1_final)
 
-detdmudc_a = hs_11_final*hs_22_final - hs_12_final*hs_12_final
+detdmudc_s = hs_11_final*hs_22_final - hs_12_final*hs_12_final
 
-dcdmu_a11 = hs_22_final/detdmudc_a
-dcdmu_a22 = hs_11_final/detdmudc_a
-dcdmu_a12 = -hs_12_final/detdmudc_a
+dcdmu_s11 = hs_22_final/detdmudc_s
+dcdmu_s22 = hs_11_final/detdmudc_s
+dcdmu_s12 = -hs_12_final/detdmudc_s
 
-ca1_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
-ca2_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
+cs1_array = np.zeros(n_points)
+cs2_array = np.zeros(n_points)
 
-ppt_mu1_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
-ppt_mu2_array = np.zeros((2 * side_x - 1) * (2 * side_y - 1))
+ppt_mu1_array = np.zeros(n_points)
+ppt_mu2_array = np.zeros(n_points)
+
+tdb_hs1 = pd.read_csv('HSN_L12_FCC_A1_1.csv');
+hs1_11 = np.array(tdb_hs1.loc[:,'HSN(Al,Al)@fcc']).squeeze()
+hs1_22 = np.array(tdb_hs1.loc[:,'HSN(Cr,Cr)@fcc']).squeeze()
+hs1_12 = np.array(tdb_hs1.loc[:,'HSN(Al,Cr)@fcc']).squeeze()
+
+hs1_11_final = hs1_11[-1]
+hs1_22_final = hs1_22[-1]
+hs1_12_final = hs1_12[-1]
+#hlT_func = interp1d(T_tdb, hl_tdb, kind='cubic')
+# use temp to find hessian
 
 for i in range(n_points):
-    ca1_array[i] = dcdmu_a11*(final_mu1_array[i] - B_a1) + dcdmu_a12*(final_mu2_array[i] - B_a2)
-    ca2_array[i] = dcdmu_a12*(final_mu1_array[i] - B_a1) + dcdmu_a22*(final_mu2_array[i] - B_a2)
+    cs1_array[i] = dcdmu_s11*(final_mu1_array[i] - B_s1) + dcdmu_s12*(final_mu2_array[i] - B_s2)
+    cs2_array[i] = dcdmu_s12*(final_mu1_array[i] - B_s1) + dcdmu_s22*(final_mu2_array[i] - B_s2)
     
-    ppt_mu1_array[i] = ha1_11_in*ca1_array[i] + ha1_12_in*ca2_array[i]
-    ppt_mu2_array[i] = ha1_12_in*ca1_array[i] + ha1_22_in*ca2_array[i]
-
-
+    ppt_mu1_array[i] = hs1_11_final*cs1_array[i] + hs1_12_final*cs2_array[i]
+    ppt_mu2_array[i] = hs1_12_final*cs1_array[i] + hs1_22_final*cs2_array[i]
 
 
 
@@ -366,7 +375,7 @@ with open('mu_1initial', 'w') as f0:
             p2 = p1 + 1
             p3 = p2 + n_points_per_side
             p4 = p1 + n_points_per_side
-            mu1 = 0.25*(final_mu1_array[p1] + final_mu1_array[p2] + final_mu1_array[p3] + final_mu1_array[p4])
+            mu1 = 0.25*(ppt_mu1_array[p1] + ppt_mu1_array[p2] + ppt_mu1_array[p3] + ppt_mu1_array[p4])
             f0.write(str(mu1)+"\n")
     f0.write(")\n;")
             
@@ -378,8 +387,8 @@ with open('mu_2initial', 'w') as f1:
             p2 = p1 + 1
             p3 = p2 + n_points_per_side
             p4 = p1 + n_points_per_side
-            mu2 = 0.25*(final_mu2_array[p1] + final_mu2_array[p2] + final_mu2_array[p3] + final_mu2_array[p4])
+            mu2 = 0.25*(ppt_mu2_array[p1] + ppt_mu2_array[p2] + ppt_mu2_array[p3] + ppt_mu2_array[p4])
             f1.write(str(mu2)+"\n")
     f1.write(")\n;")
-    
+
 
