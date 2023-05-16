@@ -295,10 +295,10 @@ writer.SetFileTypeToBinary()
     
 
 tdb_c = pd.read_csv('Composition_FCC_A1.csv');
-cs_1 = np.array(tdb.loc[:,'Al@fcc']).squeeze()
-cs_2 = np.array(tdb.loc[:,'Cr@fcc']).squeeze()
-cl_1 = np.array(tdb.loc[:,'Al@liq']).squeeze()
-cl_2 = np.array(tdb.loc[:,'Cr@liq']).squeeze()
+cs_1 = np.array(tdb_c.loc[:,'Al@fcc']).squeeze()
+cs_2 = np.array(tdb_c.loc[:,'Cr@fcc']).squeeze()
+cl_1 = np.array(tdb_c.loc[:,'Al@liq']).squeeze()
+cl_2 = np.array(tdb_c.loc[:,'Cr@liq']).squeeze()
 
 cs_1_final = cs_1[0]
 cs_2_final = cs_2[0]
