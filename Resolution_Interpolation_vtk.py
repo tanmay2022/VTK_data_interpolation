@@ -384,19 +384,34 @@ hs1_12_final = hs1_12_func(temp_n).item();
 #hs1_12_final = hs1_12[-1]
 # use temp to find hessian
 
+cs1_sum = 0.
+cs2_sum = 0.
+
 for i in range(n_points):
     cs1_array[i] = dcdmu_s11*(final_mu1_array[i] - B_s1) + dcdmu_s12*(final_mu2_array[i] - B_s2)
     cs2_array[i] = dcdmu_s12*(final_mu1_array[i] - B_s1) + dcdmu_s22*(final_mu2_array[i] - B_s2)
+    
+    cs1_sum = cs1_sum + cs1_array[i]
+    cs2_sum = cs2_sum + cs2_array[i]
     
     #cs1_array[i] = 0.0684597
     #cs2_array[i] = 0.00114417
     
     #cs1_array[i] = 0.0987016
     #cs2_array[i] = 0.0741531
+
+    #cs1_array[i] = 0.12326377737601378
+    #cs2_array[i] = 0.005887372806647023
     
     ppt_mu1_array[i] = hs1_11_final*cs1_array[i] + hs1_12_final*cs2_array[i]
     ppt_mu2_array[i] = hs1_12_final*cs1_array[i] + hs1_22_final*cs2_array[i]
 
+
+cs1_avg = cs1_sum/n_points
+cs2_avg = cs2_sum/n_points
+
+print(" average c_1 "+str(cs1_avg))
+print(" average c_2 "+str(cs2_avg))
 
 
 with open('mu_1initial', 'w') as f0:
@@ -408,6 +423,7 @@ with open('mu_1initial', 'w') as f0:
             p3 = p2 + n_points_per_side
             p4 = p1 + n_points_per_side
             mu1 = 0.25*(ppt_mu1_array[p1] + ppt_mu1_array[p2] + ppt_mu1_array[p3] + ppt_mu1_array[p4])
+            #mu1 = 0.25*(cs1_array[p1] + cs1_array[p2] + cs1_array[p3] + cs1_array[p4])
             f0.write(str(mu1)+"\n")
     f0.write(")\n;")
             
@@ -420,6 +436,7 @@ with open('mu_2initial', 'w') as f1:
             p3 = p2 + n_points_per_side
             p4 = p1 + n_points_per_side
             mu2 = 0.25*(ppt_mu2_array[p1] + ppt_mu2_array[p2] + ppt_mu2_array[p3] + ppt_mu2_array[p4])
+            #mu2 = 0.25*(cs2_array[p1] + cs2_array[p2] + cs2_array[p3] + cs2_array[p4])
             f1.write(str(mu2)+"\n")
     f1.write(")\n;")
 
