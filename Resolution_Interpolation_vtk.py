@@ -19,8 +19,11 @@ output_vtk = sys.argv[2]
 numcell = int(sys.argv[3])
 numpt = (numcell+1)**2
 
-# Temperature for evaluating chemical potential
-temp_n = float(sys.argv[4])
+# Temperature for evaluating composition during solidification
+temp_n1 = float(sys.argv[4])
+
+# Temperature for evaluating chemical potential during coarsening
+temp_n = float(sys.argv[5])
 
 # Read the binary VTK file using vtk.vtkUnstructuredGridReader
 reader = vtk.vtkUnstructuredGridReader()
@@ -298,41 +301,53 @@ grid.GetPointData().AddArray(data_array)
     
 
 tdb_c = pd.read_csv('Composition_FCC_A1.csv');
+T_tdb_c = np.array(tdb_c.loc[:,'Temp']).squeeze()
 cs_1 = np.array(tdb_c.loc[:,'Al@fcc']).squeeze()
-cs_2 = np.array(tdb_c.loc[:,'Cr@fcc']).squeeze()
+cs_2 = np.array(tdb_c.loc[:,'Mo@fcc']).squeeze()
 cl_1 = np.array(tdb_c.loc[:,'Al@liq']).squeeze()
-cl_2 = np.array(tdb_c.loc[:,'Cr@liq']).squeeze()
+cl_2 = np.array(tdb_c.loc[:,'Mo@liq']).squeeze()
 
-cs_1_final = cs_1[0]
-cs_2_final = cs_2[0]
-cl_1_final = cl_1[0]
-cl_2_final = cl_2[0]
-#cST_func = interp1d(T_tdb, c_S_tdb, kind='cubic')
-#cLT_func = interp1d(T_tdb, c_L_tdb, kind='cubic')
+cs_1_func = interp1d(T_tdb_c, cs_1, kind='cubic')
+cs_2_func = interp1d(T_tdb_c, cs_2, kind='cubic')
+cl_1_func = interp1d(T_tdb_c, cl_1, kind='cubic')
+cl_2_func = interp1d(T_tdb_c, cl_2, kind='cubic')
+
+cs_1_final = cs_1_func(temp_n1).item();
+cs_2_final = cs_2_func(temp_n1).item();
+cl_1_final = cl_1_func(temp_n1).item();
+cl_2_final = cl_2_func(temp_n1).item();
 # use temp to find compo
 
 #compo_tdb_func = interp1d(c_L_tdb, c_S_tdb, kind='cubic')
 
 tdb_hliq = pd.read_csv('HSN_LIQUID.csv');
+T_tdb_hl = np.array(tdb_hliq.loc[:,'Temp']).squeeze()
 hl_11 = np.array(tdb_hliq.loc[:,'HSN(Al,Al)@liq']).squeeze()
-hl_22 = np.array(tdb_hliq.loc[:,'HSN(Cr,Cr)@liq']).squeeze()
-hl_12 = np.array(tdb_hliq.loc[:,'HSN(Al,Cr)@liq']).squeeze()
+hl_22 = np.array(tdb_hliq.loc[:,'HSN(Mo,Mo)@liq']).squeeze()
+hl_12 = np.array(tdb_hliq.loc[:,'HSN(Al,Mo)@liq']).squeeze()
 
-hl_11_final = hl_11[0]
-hl_22_final = hl_22[0]
-hl_12_final = hl_12[0]
-#hlT_func = interp1d(T_tdb, hl_tdb, kind='cubic')
+hl_11_func = interp1d(T_tdb_hl, hl_11, kind='cubic')
+hl_22_func = interp1d(T_tdb_hl, hl_22, kind='cubic')
+hl_12_func = interp1d(T_tdb_hl, hl_12, kind='cubic')
+
+hl_11_final = hl_11_func(temp_n1).item();
+hl_22_final = hl_22_func(temp_n1).item();
+hl_12_final = hl_12_func(temp_n1).item();
 # use temp to find hessian
 
 tdb_hsol = pd.read_csv('HSN_FCC_A1.csv');
+T_tdb_hs = np.array(tdb_hsol.loc[:,'Temp']).squeeze()
 hs_11 = np.array(tdb_hsol.loc[:,'HSN(Al,Al)@fcc']).squeeze()
-hs_22 = np.array(tdb_hsol.loc[:,'HSN(Cr,Cr)@fcc']).squeeze()
-hs_12 = np.array(tdb_hsol.loc[:,'HSN(Al,Cr)@fcc']).squeeze()
+hs_22 = np.array(tdb_hsol.loc[:,'HSN(Mo,Mo)@fcc']).squeeze()
+hs_12 = np.array(tdb_hsol.loc[:,'HSN(Al,Mo)@fcc']).squeeze()
 
-hs_11_final = hs_11[0]
-hs_22_final = hs_22[0]
-hs_12_final = hs_12[0]
-#hsT_func = interp1d(T_tdb, hs_tdb, kind='cubic')
+hs_11_func = interp1d(T_tdb_hs, hs_11, kind='cubic')
+hs_22_func = interp1d(T_tdb_hs, hs_22, kind='cubic')
+hs_12_func = interp1d(T_tdb_hs, hs_12, kind='cubic')
+
+hs_11_final = hs_11_func(temp_n1).item();
+hs_22_final = hs_22_func(temp_n1).item();
+hs_12_final = hs_12_func(temp_n1).item();
 # use temp to find hessian
 
 B_s1 = (hl_11_final*cl_1_final - hs_11_final*cs_1_final) + (hl_12_final*cl_2_final - hs_12_final*cs_2_final)
@@ -352,9 +367,9 @@ ppt_mu2_array = np.zeros(n_points)
 
 tdb_hs1 = pd.read_csv('HSN_L12_FCC_A1_1.csv');
 T_tdb = np.array(tdb_hs1.loc[:,'Temp']).squeeze()
-hs1_11 = np.array(tdb_hs1.loc[:,'HSN(Al,Al)@fcc']).squeeze()
-hs1_22 = np.array(tdb_hs1.loc[:,'HSN(Cr,Cr)@fcc']).squeeze()
-hs1_12 = np.array(tdb_hs1.loc[:,'HSN(Al,Cr)@fcc']).squeeze()
+hs1_11 = np.array(tdb_hs1.loc[:,'HSN(Al,Al)@fcc1']).squeeze()
+hs1_22 = np.array(tdb_hs1.loc[:,'HSN(Mo,Mo)fcc1']).squeeze()
+hs1_12 = np.array(tdb_hs1.loc[:,'HSN(Al,Mo)fcc1']).squeeze()
 
 hs1_11_func = interp1d(T_tdb, hs1_11, kind='cubic')
 hs1_22_func = interp1d(T_tdb, hs1_22, kind='cubic')
@@ -372,6 +387,12 @@ hs1_12_final = hs1_12_func(temp_n).item();
 for i in range(n_points):
     cs1_array[i] = dcdmu_s11*(final_mu1_array[i] - B_s1) + dcdmu_s12*(final_mu2_array[i] - B_s2)
     cs2_array[i] = dcdmu_s12*(final_mu1_array[i] - B_s1) + dcdmu_s22*(final_mu2_array[i] - B_s2)
+    
+    #cs1_array[i] = 0.0684597
+    #cs2_array[i] = 0.00114417
+    
+    #cs1_array[i] = 0.0987016
+    #cs2_array[i] = 0.0741531
     
     ppt_mu1_array[i] = hs1_11_final*cs1_array[i] + hs1_12_final*cs2_array[i]
     ppt_mu2_array[i] = hs1_12_final*cs1_array[i] + hs1_22_final*cs2_array[i]
